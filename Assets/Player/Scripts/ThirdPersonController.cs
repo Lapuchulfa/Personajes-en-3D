@@ -3,12 +3,19 @@
 public class PlayerController : MonoBehaviour
 {
     public PlayerSounds playerSounds;
+    public GameObject runParticles;
 
     [Header("Movimiento")]
     public float speed = 6f;
 
+    [Header("Particulas")]
+    public Transform runParticlesPoint;
+
     [Header("Salto")]
     public float jumpForce = 7f;
+
+    [Header("Gravedad")]
+    public float gravityMultiplier = 2.5f;
 
     [Header("Referencias")]
     public Transform cameraTransform;
@@ -17,6 +24,7 @@ public class PlayerController : MonoBehaviour
     private Rigidbody rb;
 
     private bool isGrounded;
+    private bool wasMoving;
 
     void Start()
     {
@@ -28,6 +36,7 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         Jump();
+        ApplyBetterGravity();
     }
 
     void FixedUpdate()
@@ -52,10 +61,15 @@ public class PlayerController : MonoBehaviour
         // Valor movimiento
         float movementAmount = moveDirection.magnitude;
 
-        // Sonido correr
+        // Particulas al correr
+        bool isMoving = movementAmount > 0.1f && isGrounded;
 
- 
+        if (isMoving && !wasMoving)
+        {
+            SpawnRunParticles();
+        }
 
+        wasMoving = isMoving;
 
         // Animaciones
         if (animator != null)
@@ -89,12 +103,37 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
             playerSounds.AudioSaltar();
+
             rb.linearVelocity = new Vector3(
                 rb.linearVelocity.x,
                 jumpForce,
                 rb.linearVelocity.z
             );
+
+            isGrounded = false;
         }
+    }
+
+    void ApplyBetterGravity()
+    {
+        // Hace que la caida sea mas rapida y realista
+        if (rb.linearVelocity.y < 0)
+        {
+            rb.linearVelocity += Vector3.up * Physics.gravity.y *
+                                 (gravityMultiplier - 1) * Time.deltaTime;
+        }
+    }
+
+    void SpawnRunParticles()
+    {
+        if (runParticles == null || runParticlesPoint == null)
+            return;
+
+        Instantiate(
+            runParticles,
+            runParticlesPoint.position,
+            runParticlesPoint.rotation
+        );
     }
 
     private void OnCollisionStay(Collision collision)
@@ -107,4 +146,3 @@ public class PlayerController : MonoBehaviour
         isGrounded = false;
     }
 }
-
